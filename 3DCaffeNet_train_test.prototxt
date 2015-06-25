@@ -1,0 +1,53 @@
+name: "3d-net" 
+#"4d-net"
+# -> data: 10 x 3 x 2 x 3 x 4 x 5 (#data pts x #num_channels x 4D)
+# -> label: 10
+layer {
+  name: "dummy"
+  type: "DummyData"
+  top: "data"
+  top: "label"
+  dummy_data_param {
+    shape { dim: 10 dim: 1 dim: 2 dim: 3 dim: 4 dim: 5 }
+    shape { dim: 10 dim: 1 }
+  }
+}
+# -> conv-out: 10 x 8 x 1 x 1 x 1 x 1
+layer {
+  name: "conv-out"
+  type: "Convolution"
+  bottom: "data"
+  top: "conv-out"
+  convolution_param {
+    num_output: 8
+    # specifies the index of the "channels" axis --
+    # may be omitted as 1 is the default
+    axis: 1
+    #kernel_size: 2
+    #kernel_size: 3
+    #kernel_size: 4
+    #kernel_size: 5  # i could just specify "kernel_size: 2" if i wanted 2x2x2x2 filters
+
+    kernel_size: 2
+    kernel_size: 2
+    kernel_size: 2
+    kernel_size: 2  
+    stride: 2
+  }
+}
+layer {
+  name: "ip-out"
+  type: "InnerProduct"
+  bottom: "conv-out"
+  top: "ip-out"
+  inner_product_param {
+    num_output: 1
+  }
+}
+layer {
+  name: "loss"
+  type: "SoftmaxWithLoss"
+  bottom: "ip-out"
+  bottom: "label"
+  top: "loss"
+}
