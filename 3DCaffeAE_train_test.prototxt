@@ -1,102 +1,101 @@
-name: "3d-autoencoder" 
-# -> data: 10 x 3 x 2 x 3 x 4 x 5 (#data pts x #num_channels x 4D)
-# -> label: 10
+name: "3DAE"
 layer {
   name: "dummy"
   type: "DummyData"
   top: "data"
+  top: "label"
   dummy_data_param {
-    shape { dim: 10 dim: 1 dim: 2 dim: 3 dim: 4 dim: 5 }
-    shape { dim: 10 dim: 1 }
-  }
-  include {
-    phase: TRAIN
+    shape { dim: 10 dim: 1 dim: 5 dim: 5 }
+    shape { dim: 10 dim: 1 }	
   }
 }
 
-# -> conv-out: 10 x 8 x 1 x 1 x 1 x 1
 layer {
-  name: "conv"
+  name: "conv1"
   type: "Convolution"
   bottom: "data"
-  top: "conv-out"
+  top: "conv1"
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    lr_mult: 2
+    decay_mult: 0
+  }
   convolution_param {
-    num_output: 8
-    # specifies the index of the "channels" axis --
-    # may be omitted as 1 is the default
-    axis: 1
-    #kernel_size: 2
-    #kernel_size: 3
-    #kernel_size: 4
-    #kernel_size: 5  # i could just specify "kernel_size: 2" if i wanted 2x2x2x2 filters
-
-    kernel_size: 2
-    kernel_size: 2
-    kernel_size: 2
-    kernel_size: 2  
-    stride: 2
+    num_output: 16
+    kernel_size: 4
+    stride: 1
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
   }
 }
 layer {
-  name: "encode"
-  type: "Sigmoid"
-  bottom: "conv-out"
-  top: "encode-out"
+  name: "relu1"
+  type: "ReLU"
+  bottom: "conv1"
+  top: "conv1"
 }
 
+# DECONVOLUTION PART
 
-# -> deconv: 10 x 8 x 1 x 1 x 1 x 1
 layer {
-  name: "deconv"
+  name: "conv1t"
   type: "Deconvolution"
-  bottom: "encode-out"
-  top: "deconv-out"
-  deconvolution_param {
+  bottom: "conv1"
+  top: "conv1t"
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    lr_mult: 2
+    decay_mult: 0
+  }
+  convolution_param {
     num_output: 1
-    # specifies the index of the "channels" axis --
-    # may be omitted as 1 is the default
-    axis: 1
-    kernel_size: 2
-    kernel_size: 2
-    kernel_size: 2
-    kernel_size: 2  
-    stride: 2
+    kernel_size: 4
+    stride: 1
   }
 }
+
+
 layer {
-  name: "decode"
-  type: "Sigmoid"
-  bottom: "encode-out"
-  top: "decode-out"
+  name: "flatdata"
+  type: "Flatten"
+  bottom: "data"
+  top: "flatdata"
 }
 
-
-# loss layer
 layer {
   name: "loss"
   type: "SigmoidCrossEntropyLoss"
-  bottom: "decode-out"
-  bottom: "data"
+  bottom: "conv1t"
+  bottom: "flatdata"
   top: "cross_entropy_loss"
   loss_weight: 1
 }
 layer {
-  name: "decode2"
+  name: "decode1neuron"
   type: "Sigmoid"
-  bottom: "decode-out"
-  top: "decode-out2"
+  bottom: "conv1t"
+  top: "decode1neuron"
 }
 layer {
   name: "loss"
   type: "EuclideanLoss"
-  bottom: "decode-out2"
-  bottom: "data"
+  bottom: "decode1neuron"
+  bottom: "flatdata"
   top: "l2_error"
   loss_weight: 0
 }
-
-
-
 
 
 
