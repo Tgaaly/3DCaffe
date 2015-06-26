@@ -1,12 +1,26 @@
 name: "3DAE"
 layer {
-  name: "dummy"
-  type: "DummyData"
+  name: "data"
+  type: "HDF5Data"
   top: "data"
-  top: "label"
-  dummy_data_param {
-    shape { dim: 10 dim: 1 dim: 5 dim: 5 dim: 5  }
-    shape { dim: 10 dim: 1 }	
+  hdf5_data_param{
+	source: "/home/tarek/Code_Research/Caffe_data_prep/list.txt"
+  	batch_size: 100
+  }
+  include{
+	phase: TRAIN
+  }
+}
+layer {
+  name: "data"
+  type: "HDF5Data"
+  top: "data"
+  hdf5_data_param{
+	source: "/home/tarek/Code_Research/Caffe_data_prep/list.txt"
+  	batch_size: 100
+  }
+  include{
+	phase: TEST
   }
 }
 
@@ -40,8 +54,8 @@ layer {
   }
 }
 layer {
-  name: "relu1"
-  type: "ReLU"
+  name: "sigm"
+  type: "Sigmoid"
   bottom: "conv1"
   top: "conv1"
 }
@@ -69,6 +83,13 @@ layer {
     stride: 1
   }
 }
+layer {
+  name: "sigm"
+  type: "Sigmoid"
+  bottom: "conv1t"
+  top: "conv1t"
+}
+
 
 
 layer {
