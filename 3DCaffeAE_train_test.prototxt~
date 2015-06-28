@@ -5,7 +5,7 @@ layer {
   top: "data"
   hdf5_data_param{
 	source: "/home/tarek/Code_Research/Caffe_data_prep/list.txt"
-  	batch_size: 100
+  	batch_size: 10
   }
   include{
 	phase: TRAIN
@@ -17,56 +17,63 @@ layer {
   top: "data"
   hdf5_data_param{
 	source: "/home/tarek/Code_Research/Caffe_data_prep/list.txt"
-  	batch_size: 100
+  	batch_size: 10
   }
   include{
 	phase: TEST
   }
 }
 
+
+###############conv####################
+
 layer {
   name: "conv1"
   type: "Convolution"
   bottom: "data"
   top: "conv1"
-  param {
+  param { # for weights
     lr_mult: 1
     decay_mult: 1
   }
-  param {
+  param { # for bias
     lr_mult: 2
     decay_mult: 0
   }
   convolution_param {
     num_output: 16
-    kernel_size: 4
-    kernel_size: 4
-    kernel_size: 4
+    kernel_size: 5
+    kernel_size: 5
+    kernel_size: 5
+    group: 1	
     stride: 1
-    weight_filler {
-      type: "gaussian"
-      std: 0.01
+    weight_filler { 
+	type: "gaussian" 
+	mean: 0 std: 0.05 
+        sparse: 15
     }
-    bias_filler {
-      type: "constant"
-      value: 0
-    }
+    #bias_term: false
+#    bias_filler { 
+#	type: "constant" 
+#	value: 0 
+#    }
   }
 }
 layer {
-  name: "sigm"
-  type: "Sigmoid"
+  name: "relu1"
+  type: "ReLU"
   bottom: "conv1"
-  top: "conv1"
+  top: "relu1"
 }
 
-# DECONVOLUTION PART
+###############deconv####################
+
 
 layer {
-  name: "conv1t"
+  name: "deconv1"
   type: "Deconvolution"
-  bottom: "conv1"
-  top: "conv1t"
+  bottom: "relu1"
+  top: "deconv1"
   param {
     lr_mult: 1
     decay_mult: 1
@@ -77,20 +84,53 @@ layer {
   }
   convolution_param {
     num_output: 1
-    kernel_size: 4
-    kernel_size: 4
-    kernel_size: 4
+    kernel_size: 5
+    kernel_size: 5
+    kernel_size: 5
+    group: 1
     stride: 1
+    weight_filler { 
+	type: "gaussian" 
+	mean: 0 std: 0.05 
+        sparse: 15
+    }
   }
 }
 layer {
-  name: "sigm"
-  type: "Sigmoid"
-  bottom: "conv1t"
-  top: "conv1t"
+  name: "relu2"
+  type: "ReLU"
+  bottom: "deconv1"
+  top: "relu2"
 }
 
 
+
+
+###################################
+
+layer {
+  name: "ip1"
+  type: "InnerProduct"
+  bottom: "relu2"
+  top: "ip1"
+  param {
+    lr_mult: 1
+  }
+  param {
+    lr_mult: 2
+  }
+  inner_product_param {
+    num_output: 9261
+    weight_filler {
+      type: "xavier"
+    }
+    bias_filler {
+      type: "constant"
+    }
+  }
+}
+
+###################################
 
 layer {
   name: "flatdata"
@@ -98,19 +138,18 @@ layer {
   bottom: "data"
   top: "flatdata"
 }
-
 layer {
   name: "loss"
   type: "SigmoidCrossEntropyLoss"
-  bottom: "conv1t"
+  bottom: "ip1"
   bottom: "flatdata"
   top: "cross_entropy_loss"
-  loss_weight: 1
+  loss_weight: 0
 }
 layer {
   name: "decode1neuron"
   type: "Sigmoid"
-  bottom: "conv1t"
+  bottom: "ip1"
   top: "decode1neuron"
 }
 layer {
@@ -119,7 +158,7 @@ layer {
   bottom: "decode1neuron"
   bottom: "flatdata"
   top: "l2_error"
-  loss_weight: 0
+  loss_weight: 1
 }
 
 
